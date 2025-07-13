@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>控制测试页面</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-area {
+            width: 100%;
+            height: 300px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+            cursor: pointer;
+        }
+        
+        .test-area:hover {
+            background: #e9e9e9;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .key-status {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 3px;
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+        }
+        
+        .key-status.active {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Mac控制测试页面</h1>
+        
+        <div class="status info">
+            <strong>测试说明：</strong>
+            <ul>
+                <li>点击下面的测试区域来测试指针锁定</li>
+                <li>使用WASD或方向键测试键盘输入</li>
+                <li>使用触控板或鼠标测试点击</li>
+                <li>按ESC键退出指针锁定</li>
+            </ul>
+        </div>
+        
+        <div class="test-area" id="testArea">
+            点击这里开始测试指针锁定
+        </div>
+        
+        <div class="status info">
+            <strong>环境信息：</strong>
+            <div id="envInfo"></div>
+        </div>
+        
+        <div class="status info">
+            <strong>按键状态：</strong>
+            <div id="keyStatus"></div>
+        </div>
+        
+        <div class="status info">
+            <strong>鼠标状态：</strong>
+            <div id="mouseStatus"></div>
+        </div>
+        
+        <div class="status info">
+            <strong>事件日志：</strong>
+            <div id="eventLog" style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px;"></div>
+        </div>
+    </div>
+
+    <script>
+        class ControlTester {
+            constructor() {
+                this.keys = {};
+                this.mousePressed = false;
+                this.isPointerLocked = false;
+                this.isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+                this.isChrome = navigator.userAgent.indexOf('Chrome') > -1 && 
+                               navigator.userAgent.indexOf('Safari') > -1 &&
+                               navigator.userAgent.indexOf('Edge') === -1;
+                
+                this.setupEventListeners();
+                this.updateEnvironmentInfo();
+                this.updateKeyStatus();
+                this.updateMouseStatus();
+            }
+            
+            setupEventListeners() {
+                const testArea = document.getElementById('testArea');
+                
+                // 键盘事件
+                document.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
+                    this.logEvent('keydown', e.code);
+                    this.updateKeyStatus();
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                    this.logEvent('keyup', e.code);
+                    this.updateKeyStatus();
+                });
+                
+                // 鼠标事件
+                document.addEventListener('mousedown', (e) => {
+                    this.mousePressed = true;
+                    this.logEvent('mousedown', `button: ${e.button}`);
+                    this.updateMouseStatus();
+                });
+                
+                document.addEventListener('mouseup', (e) => {
+                    this.mousePressed = false;
+                    this.logEvent('mouseup', `button: ${e.button}`);
+                    this.updateMouseStatus();
+                });
+                
+                // 触控板事件
+                document.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.mousePressed = true;
+                    this.logEvent('touchstart', '触控板触摸');
+                    this.updateMouseStatus();
+                });
+                
+                document.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.mousePressed = false;
+                    this.logEvent('touchend', '触控板释放');
+                    this.updateMouseStatus();
+                });
+                
+                // 指针锁定事件
+                document.addEventListener('pointerlockchange', () => {
+                    this.isPointerLocked = document.pointerLockElement !== null;
+                    this.logEvent('pointerlockchange', this.isPointerLocked ? '锁定' : '解锁');
+                    this.updateMouseStatus();
+                });
+                
+                // 测试区域点击
+                testArea.addEventListener('click', () => {
+                    this.requestPointerLock(testArea);
+                });
+                
+                // 防止默认行为
+                document.addEventListener('keydown', (e) => {
+                    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+            
+            requestPointerLock(element) {
+                try {
+                    if (element.requestPointerLock) {
+                        element.requestPointerLock();
+                    } else if (element.webkitRequestPointerLock) {
+                        element.webkitRequestPointerLock();
+                    } else if (element.mozRequestPointerLock) {
+                        element.mozRequestPointerLock();
+                    }
+                    this.logEvent('requestPointerLock', '请求指针锁定');
+                } catch (error) {
+                    this.logEvent('requestPointerLock', `错误: ${error.message}`);
+                }
+            }
+            
+            updateEnvironmentInfo() {
+                const envInfo = document.getElementById('envInfo');
+                envInfo.innerHTML = `
+                    平台: ${this.isMac ? 'Mac' : '其他'}<br>
+                    浏览器: ${this.isChrome ? 'Chrome' : '其他'}<br>
+                    用户代理: ${navigator.userAgent}<br>
+                    支持指针锁定: ${'requestPointerLock' in document.body ? '是' : '否'}<br>
+                    支持Webkit指针锁定: ${'webkitRequestPointerLock' in document.body ? '是' : '否'}
+                `;
+            }
+            
+            updateKeyStatus() {
+                const keyStatus = document.getElementById('keyStatus');
+                const testKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
+                
+                keyStatus.innerHTML = testKeys.map(key => {
+                    const isActive = this.keys[key] || false;
+                    return `<span class="key-status ${isActive ? 'active' : ''}">${key}</span>`;
+                }).join('');
+            }
+            
+            updateMouseStatus() {
+                const mouseStatus = document.getElementById('mouseStatus');
+                mouseStatus.innerHTML = `
+                    鼠标按下: ${this.mousePressed ? '是' : '否'}<br>
+                    指针锁定: ${this.isPointerLocked ? '是' : '否'}
+                `;
+            }
+            
+            logEvent(type, data) {
+                const eventLog = document.getElementById('eventLog');
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.textContent = `[${timestamp}] ${type}: ${data}`;
+                eventLog.appendChild(logEntry);
+                eventLog.scrollTop = eventLog.scrollHeight;
+            }
+        }
+        
+        // 初始化测试器
+        new ControlTester();
+    </script>
+</body>
+</html> 

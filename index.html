@@ -1,97 +1,132 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cursor 3D 游戏开发</title>
+    <title>Cyberpunk 3D Game</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Arial', sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00ffff;
             overflow: hidden;
+            cursor: crosshair;
         }
-        
-        #gameContainer {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        #ui {
-            position: absolute;
+
+        #gameUI {
+            position: fixed;
             top: 20px;
             left: 20px;
             z-index: 100;
-            color: white;
             font-size: 16px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            text-shadow: 0 0 10px #00ffff;
         }
-        
-        .health-bar {
-            width: 200px;
-            height: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid #fff;
+
+        .ui-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ffff;
             border-radius: 10px;
+            padding: 15px;
             margin-bottom: 10px;
+            backdrop-filter: blur(10px);
         }
-        
-        .health-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4CAF50, #8BC34A);
-            border-radius: 8px;
-            transition: width 0.3s ease;
+
+        .ui-title {
+            font-size: 14px;
+            color: #ff0080;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
-        
-        .score {
+
+        .ui-value {
             font-size: 24px;
             font-weight: bold;
-            margin-bottom: 10px;
+            color: #00ffff;
         }
-        
-        .controls {
-            position: absolute;
+
+        #healthBar {
+            width: 200px;
+            height: 20px;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid #ff0080;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        #healthFill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.3s ease;
+        }
+
+        #controls {
+            position: fixed;
             bottom: 20px;
             left: 20px;
-            color: white;
-            font-size: 14px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            font-size: 12px;
+            color: #888;
         }
-        
-        .loading {
-            position: absolute;
+
+        #loading {
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
+            color: #00ffff;
             font-size: 24px;
-            z-index: 200;
+            z-index: 1000;
+        }
+
+        .glitch {
+            animation: glitch 2s infinite;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
         }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <div id="ui">
-            <div class="score">分数: <span id="score">0</span></div>
-            <div class="health-bar">
-                <div class="health-fill" id="healthFill" style="width: 100%"></div>
+    <div id="gameUI">
+        <div class="ui-panel">
+            <div class="ui-title">Score</div>
+            <div class="ui-value" id="score">0</div>
+        </div>
+        
+        <div class="ui-panel">
+            <div class="ui-title">Health</div>
+            <div class="ui-value" id="health">100</div>
+            <div id="healthBar">
+                <div id="healthFill"></div>
             </div>
-            <div>生命值: <span id="health">100</span></div>
         </div>
-        
-        <div class="controls">
-            <h3>游戏控制</h3>
-            <p>WASD：移动角色</p>
-            <p>鼠标：视角控制</p>
-            <p>空格键：跳跃</p>
-            <p>左键点击：射击</p>
-        </div>
-        
-        <div class="loading" id="loading">加载中...</div>
     </div>
-    
+
+    <div id="controls">
+        <div>WASD / Arrow Keys: Move</div>
+        <div>Space: Jump</div>
+        <div>Mouse: Look</div>
+        <div>Left Click: Shoot</div>
+        <div>F1: Debug Mode</div>
+    </div>
+
+    <div id="loading" class="glitch">Loading Cyberpunk World...</div>
+
     <script type="module" src="/src/main.ts"></script>
 </body>
 </html> 
